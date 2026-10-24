@@ -24,20 +24,23 @@
   if (dialog && items.length > 0) {
     const frame = dialog.querySelector<HTMLElement>('[data-lightbox-frame]')!;
     const counter = dialog.querySelector<HTMLElement>('[data-lightbox-counter]')!;
-    const image = document.createElement('img');
-    image.decoding = 'async';
-    frame.append(image);
-
+    // Created on first open, so the page never holds an <img> without alt text.
+    let image: HTMLImageElement | null = null;
     let current = 0;
     let trigger: HTMLElement | null = null;
 
     const show = (index: number) => {
       current = (index + items.length) % items.length;
       const item = items[current]!;
-      image.src = item.href;
+      if (!image) {
+        image = document.createElement('img');
+        image.decoding = 'async';
+        frame.append(image);
+      }
       image.alt = item.querySelector('img')?.alt ?? '';
       image.width = Number(item.dataset.width);
       image.height = Number(item.dataset.height);
+      image.src = item.href;
       counter.textContent = `${current + 1} / ${items.length}`;
     };
 
