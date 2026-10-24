@@ -2,6 +2,7 @@
 import { getImage, Picture } from 'astro:assets';
 import { render } from 'astro:content';
 import Enquire from '../../components/Enquire.astro';
+import Lightbox from '../../components/Lightbox.astro';
 import Base from '../../layouts/Base.astro';
 import { getDesigns, type Design } from '../../lib/content';
 
@@ -81,6 +82,7 @@ const gallery = await Promise.all(
       <a class="back-link" href="/#designs"><span aria-hidden="true">←</span> All designs</a>
     </p>
   </article>
+  <Lightbox />
 </Base>
 
 <style>

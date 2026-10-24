@@ -181,6 +181,50 @@ describe('V8: scripts', () => {
   test('the home page ships no <script>', () => {
     expect(page('')).not.toMatch(/<script\b/i);
   });
+
+  for (const { slug } of designs) {
+    test(`/designs/${slug}/ ships only the lightbox script`, () => {
+      const scripts = [...page(`designs/${slug}`).matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+      expect(scripts).toHaveLength(1);
+      const [, attributes, body] = scripts[0]!;
+      const src = attrsOf(` ${attributes}`).src;
+      const code = src ? read(join(dist, src)) : body!;
+      expect(code).toContain('data-lightbox');
+    });
+  }
+});
+
+describe('V9: lightbox', () => {
+  for (const { slug } of designs) {
+    test(`/designs/${slug}/ has a closed <dialog> with labelled controls and no empty <img>`, () => {
+      const dialog = /<dialog\b[^>]*data-lightbox[^>]*>([\s\S]*?)<\/dialog>/.exec(page(`designs/${slug}`));
+      expect(dialog).not.toBeNull();
+      expect(dialog![0]).not.toMatch(/<dialog\b[^>]*\bopen\b/);
+      expect(tags(dialog![1]!, 'img')).toEqual([]);
+      const buttons = tags(dialog![1]!, 'button');
+      expect(buttons.map((button) => button['aria-label'])).toEqual(['Close', 'Previous photo', 'Next photo']);
+    });
+  }
+
+  test('motion (transition, animation, smooth scroll) only inside prefers-reduced-motion: no-preference', () => {
+    const files = walk(join(root, 'src')).filter((file) => /\.(css|astro)$/.test(file));
+    const offenders = files.filter((file) => {
+      let css = read(file);
+      // Drop every `@media (prefers-reduced-motion: no-preference) { ... }` block, braces balanced.
+      for (let at = css.indexOf('prefers-reduced-motion: no-preference'); at >= 0; at = css.indexOf('prefers-reduced-motion: no-preference')) {
+        const start = css.lastIndexOf('@media', at);
+        let depth = 0;
+        let end = css.indexOf('{', at);
+        for (; end < css.length; end++) {
+          if (css[end] === '{') depth++;
+          else if (css[end] === '}' && --depth === 0) break;
+        }
+        css = css.slice(0, start) + css.slice(end + 1);
+      }
+      return /\b(transition|animation)\s*:|scroll-behavior:\s*smooth/.test(css);
+    });
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe('I.route: home', () => {

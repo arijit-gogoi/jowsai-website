@@ -1,0 +1,194 @@
+---
+// Progressive enhancement: without JavaScript every gallery link
+// ([data-lightbox-item]) opens its large image; with it, the image opens here.
+---
+
+<dialog class="lightbox" data-lightbox aria-label="Photo viewer">
+  <div class="lightbox__frame" data-lightbox-frame></div>
+  <p class="lightbox__counter" data-lightbox-counter aria-live="polite"></p>
+  <button class="lightbox__close" type="button" data-lightbox-close aria-label="Close" autofocus>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+  </button>
+  <button class="lightbox__prev" type="button" data-lightbox-prev aria-label="Previous photo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>
+  </button>
+  <button class="lightbox__next" type="button" data-lightbox-next aria-label="Next photo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
+  </button>
+</dialog>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+  const items = [...document.querySelectorAll<HTMLAnchorElement>('[data-lightbox-item]')];
+
+  if (dialog && items.length > 0) {
+    const frame = dialog.querySelector<HTMLElement>('[data-lightbox-frame]')!;
+    const counter = dialog.querySelector<HTMLElement>('[data-lightbox-counter]')!;
+    const image = document.createElement('img');
+    image.decoding = 'async';
+    frame.append(image);
+
+    let current = 0;
+    let trigger: HTMLElement | null = null;
+
+    const show = (index: number) => {
+      current = (index + items.length) % items.length;
+      const item = items[current]!;
+      image.src = item.href;
+      image.alt = item.querySelector('img')?.alt ?? '';
+      image.width = Number(item.dataset.width);
+      image.height = Number(item.dataset.height);
+      counter.textContent = `${current + 1} / ${items.length}`;
+    };
+
+    items.forEach((item, index) => {
+      item.addEventListener('click', (event) => {
+        // Let modified clicks open the image in a new tab or window as usual.
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        trigger = item;
+        show(index);
+        dialog.showModal();
+      });
+    });
+
+    dialog.querySelector('[data-lightbox-close]')?.addEventListener('click', () => dialog.close());
+    dialog.querySelector('[data-lightbox-prev]')?.addEventListener('click', () => show(current - 1));
+    dialog.querySelector('[data-lightbox-next]')?.addEventListener('click', () => show(current + 1));
+
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight') show(current + 1);
+      else if (event.key === 'ArrowLeft') show(current - 1);
+      else return;
+      event.preventDefault();
+    });
+
+    // A click on the dimmed area around the photo lands on the dialog itself.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+
+    // Esc, the close button and backdrop clicks all end here.
+    dialog.addEventListener('close', () => {
+      trigger?.focus();
+      trigger = null;
+    });
+
+    if (items.length < 2) {
+      for (const button of dialog.querySelectorAll<HTMLElement>('[data-lightbox-prev], [data-lightbox-next]')) {
+        button.hidden = true;
+      }
+    }
+  }
+</script>
+
+<style>
+  .lightbox {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 4rem clamp(0.75rem, 6vw, 5.5rem);
+    border: 0;
+    background: rgb(26 18 14 / 0.95);
+    color: var(--color-on-dark);
+  }
+
+  .lightbox[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  .lightbox::backdrop {
+    background: transparent;
+  }
+
+  .lightbox__frame :global(img) {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100dvh - 8rem);
+  }
+
+  .lightbox__counter {
+    position: absolute;
+    bottom: 1.25rem;
+    left: 50%;
+    translate: -50% 0;
+    font-size: 0.8125rem;
+    letter-spacing: 0.16em;
+    color: var(--color-on-dark-muted);
+  }
+
+  button {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(248 244 236 / 0.12);
+    color: var(--color-on-dark);
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: rgb(248 244 236 / 0.24);
+  }
+
+  button:focus-visible {
+    outline-color: var(--color-on-dark);
+  }
+
+  button[hidden] {
+    display: none;
+  }
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .lightbox__close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .lightbox__prev,
+  .lightbox__next {
+    top: 50%;
+    translate: 0 -50%;
+  }
+
+  .lightbox__prev {
+    left: 0.75rem;
+  }
+
+  .lightbox__next {
+    right: 0.75rem;
+  }
+
+  :global(html:has(.lightbox[open])) {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] {
+      animation: lightbox-in 0.2s ease-out;
+    }
+
+    @keyframes lightbox-in {
+      from {
+        opacity: 0;
+      }
+    }
+  }
+</style>
