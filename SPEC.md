@@ -83,7 +83,7 @@ T6|x|`src/config.ts` contact + CTA & footer links|V5,I.link
 T7|x|home `/`: hero, story, `#designs` grid|V6,V8,V11,I.route
 T8|x|design page `/designs/<slug>/`: title block, gallery, story, CTA, back link|V1,V2,V4,V5,I.route
 T9|x|lightbox: native `<dialog>`, progressive enhancement|V8,V9
-T10|.|verify: build, check, test, `dist/` greps, Chrome @390px & 1440px|V1,V4,V7,V8,V10,V11,V12
+T10|x|verify: build, check, test, `dist/` greps, Chrome @390px & 1440px|V1,V4,V7,V8,V10,V11,V12
 
 ## §B BUGS
 id|date|cause|fix

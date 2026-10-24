@@ -298,6 +298,18 @@ for (const design of designs) {
   });
 }
 
+describe('V7: ivory claims', () => {
+  const claims = /\b(bodo|dyes?|dyed|blend(ed)?|natural colou?rs?)\b|100\s*%/i;
+
+  test('the ivory page text makes no fibre-blend, Bodo or dye claim', () => {
+    expect(visibleText(page('designs/ivory')).match(claims)?.[0] ?? null).toBeNull();
+  });
+
+  test('the same check does flag the red-motif page, so it reads real page text', () => {
+    expect(visibleText(page('designs/red-motif')).match(claims)?.[0]).toBeDefined();
+  });
+});
+
 describe('V13: content sources', () => {
   test('no .docx file and no text from docx variants B/C in dist/', () => {
     expect(distFiles.filter((file) => /\.docx$/i.test(file))).toEqual([]);
