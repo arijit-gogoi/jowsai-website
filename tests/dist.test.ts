@@ -200,6 +200,60 @@ describe('I.route: home', () => {
   });
 });
 
+/** `/_astro/img2.9wuLxGZl_ZJ13RT.jpg` → `img2` */
+const assetStem = (url = '') => /\/_astro\/([^/]+?)\.[^./]+\.[a-z0-9]+$/i.exec(url)?.[1];
+
+describe('V4: alt text', () => {
+  test('every <img> on every page has a non-empty alt', () => {
+    const bad = pages.flatMap((file) =>
+      tags(read(file), 'img')
+        .filter((img) => !decode(img.alt ?? '').trim())
+        .map((img) => `${relative(dist, file)}: ${img.src}`),
+    );
+    expect(bad).toEqual([]);
+  });
+});
+
+for (const design of designs) {
+  describe(`I.route: /designs/${design.slug}/`, () => {
+    const html = page(`designs/${design.slug}`);
+    const gallery = /<ul\b[^>]*\bclass="gallery\b[^"]*"[^>]*>([\s\S]*?)<\/ul>/.exec(html)?.[1] ?? '';
+
+    test('V2: gallery follows the images list, then filename order', () => {
+      expect(tags(gallery, 'a').map((a) => assetStem(a.href))).toEqual(design.gallery.map((item) => stem(item.file)));
+      expect(tags(gallery, 'img').map((img) => assetStem(img.src))).toEqual(design.gallery.map((item) => stem(item.file)));
+    });
+
+    test('V4: gallery alts are the listed alt or "<name> — photo <n>"', () => {
+      expect(tags(gallery, 'img').map((img) => decode(img.alt ?? ''))).toEqual(design.gallery.map((item) => item.alt));
+    });
+
+    test('V9: every gallery thumbnail links to an emitted large image', () => {
+      const hrefs = tags(gallery, 'a').map((a) => a.href ?? '');
+      expect(hrefs).toHaveLength(design.gallery.length);
+      expect(hrefs.filter((href) => !href.startsWith('/_astro/') || !existsSync(join(dist, href)))).toEqual([]);
+    });
+
+    test('title block (name, subtitle, tags), story in order, back link to /#designs', () => {
+      const head = /<header\b[^>]*\bclass="design__head\b[^"]*"[^>]*>([\s\S]*?)<\/header>/.exec(html)?.[1] ?? '';
+      const h1 = decode(/<h1\b[^>]*>([^<]*)<\/h1>/.exec(head)?.[1] ?? '').replace(/ /g, ' ');
+      expect(h1).toBe(design.name);
+      const headText = visibleText(head);
+      if (design.subtitle) expect(headText).toContain(design.subtitle);
+      for (const tag of design.tags) expect(headText).toContain(tag);
+
+      const storyText = visibleText(section(html, 'design__story'));
+      let from = 0;
+      for (const block of mdBlocks(readMd(join(raw, design.slug, 'design.md')).body)) {
+        const at = storyText.indexOf(block, from);
+        expect({ block, found: at >= 0 }).toEqual({ block, found: true });
+        from = at + block.length;
+      }
+      expect(tags(html, 'a').some((a) => a.href === '/#designs' && a.class?.includes('back'))).toBe(true);
+    });
+  });
+}
+
 describe('V13: content sources', () => {
   test('no .docx file and no text from docx variants B/C in dist/', () => {
     expect(distFiles.filter((file) => /\.docx$/i.test(file))).toEqual([]);

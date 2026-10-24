@@ -1,5 +1,5 @@
 ---
-import { Picture } from 'astro:assets';
+import { getImage, Picture } from 'astro:assets';
 import { render } from 'astro:content';
 import Enquire from '../../components/Enquire.astro';
 import Base from '../../layouts/Base.astro';
@@ -16,21 +16,175 @@ interface Props {
 
 const { design } = Astro.props;
 const { Content } = await render(design.entry);
+// Keep a spaced dash on the line before it: "Eri Silk Stole —" / "Red Motif".
+const heading = design.name.replace(/ ([—–]) /g, ' $1 ');
+
+// Each thumbnail links to a large WebP, so the gallery works without JavaScript.
+const gallery = await Promise.all(
+  design.gallery.map(async (item) => ({
+    ...item,
+    large: await getImage({ src: item.image, width: Math.min(item.image.width, 2048), format: 'webp' }),
+  })),
+);
 ---
 
 <Base title={design.name} description={design.subtitle}>
-  <h1>{design.name}</h1>
-  <ul>
-    {
-      design.gallery.map((item) => (
-        <li>
-          <Picture src={item.image} alt={item.alt} formats={['avif', 'webp']} />
-        </li>
-      ))
-    }
-  </ul>
-  <div class="prose">
-    <Content />
-  </div>
-  <Enquire name={design.name} />
+  <article class="design">
+    <header class="design__head wrap">
+      <h1>{heading}</h1>
+      {design.subtitle && <p class="design__subtitle">{design.subtitle}</p>}
+      {
+        design.tags.length > 0 && (
+          <ul class="tags" aria-label="Details">
+            {design.tags.map((tag) => (
+              <li>{tag}</li>
+            ))}
+          </ul>
+        )
+      }
+    </header>
+
+    <ul class="gallery wrap" aria-label="Photos">
+      {
+        gallery.map((item) => (
+          <li>
+            <a
+              href={item.large.src}
+              data-lightbox-item
+              data-width={item.large.attributes.width}
+              data-height={item.large.attributes.height}
+            >
+              <Picture
+                src={item.image}
+                alt={item.alt}
+                formats={['avif', 'webp']}
+                width={600}
+                widths={[400, 600, 800, 1024]}
+                sizes="(min-width: 76rem) 24rem, (min-width: 38rem) 45vw, 90vw"
+                class="gallery__image"
+              />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <section class="design__story wrap">
+      <div class="prose">
+        <Content />
+      </div>
+    </section>
+
+    <Enquire name={design.name} />
+
+    <p class="back wrap">
+      <a class="back-link" href="/#designs"><span aria-hidden="true">←</span> All designs</a>
+    </p>
+  </article>
 </Base>
+
+<style>
+  .design__head {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    padding-block: clamp(1.5rem, 1rem + 3vw, 3.5rem) clamp(2rem, 1.5rem + 3vw, 3.5rem);
+    text-align: center;
+  }
+
+  h1 {
+    max-width: 24ch;
+    font-size: clamp(2.5rem, 1.8rem + 3.2vw, 4.5rem);
+  }
+
+  .design__subtitle {
+    font-family: var(--font-display);
+    font-size: clamp(1.375rem, 1.15rem + 1vw, 1.875rem);
+    font-style: italic;
+    color: var(--color-text-muted);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    max-width: 44rem;
+    margin-top: 0.5rem;
+    padding: 0;
+    list-style: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .tags li {
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    align-items: start;
+    gap: clamp(1rem, 0.5rem + 1.5vw, 1.75rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .gallery a {
+    display: block;
+    cursor: zoom-in;
+  }
+
+  .gallery__image {
+    width: 100%;
+    height: auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .gallery__image {
+      transition: opacity 0.3s ease;
+    }
+
+    .gallery a:hover .gallery__image {
+      opacity: 0.88;
+    }
+  }
+
+  .design__story {
+    padding-top: var(--section-space);
+  }
+
+  .design__story .prose {
+    margin-inline: auto;
+  }
+
+  .design__story .prose > :global(p:not(h2 ~ p)) {
+    font-family: var(--font-display);
+    font-size: clamp(1.375rem, 1.15rem + 0.9vw, 1.75rem);
+    line-height: 1.45;
+  }
+
+  .back {
+    margin-top: var(--section-space);
+    text-align: center;
+  }
+
+  .back-link {
+    display: inline-block;
+    padding-block: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .back-link:hover {
+    color: var(--color-accent-text);
+  }
+</style>
