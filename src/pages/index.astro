@@ -3,6 +3,7 @@ import { Picture } from 'astro:assets';
 import { render } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import { getDesigns, getHome } from '../lib/content';
+import { url } from '../lib/url';
 
 const designs = await getDesigns();
 const { entry, hero } = await getHome();
@@ -44,7 +45,7 @@ const { Content } = await render(entry);
             const cover = design.gallery[0]!;
             return (
               <li>
-                <a class="card" href={`/designs/${design.slug}/`}>
+                <a class="card" href={url(`/designs/${design.slug}/`)}>
                   <Picture
                     src={cover.image}
                     alt={cover.alt}

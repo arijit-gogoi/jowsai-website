@@ -3,6 +3,7 @@ import { Font } from 'astro:assets';
 import { contact } from '../config';
 import { contactLinks } from '../lib/contact';
 import { getHome } from '../lib/content';
+import { url } from '../lib/url';
 import '../styles/global.css';
 
 interface Props {
@@ -25,16 +26,16 @@ const links = contactLinks(contact);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
     <Font cssVariable="--font-display" preload={[{ weight: 600, style: 'normal' }]} />
     <Font cssVariable="--font-text" preload={[{ weight: 400, style: 'normal' }]} />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header wrap">
-      <a class="wordmark" href="/">{hero.title}</a>
+      <a class="wordmark" href={url('/')}>{hero.title}</a>
       <nav aria-label="Main">
-        <a href="/#designs">Designs</a>
+        <a href={url('/#designs')}>Designs</a>
       </nav>
     </header>
     <main id="main">

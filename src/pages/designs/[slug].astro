@@ -5,6 +5,7 @@ import Enquire from '../../components/Enquire.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import Base from '../../layouts/Base.astro';
 import { getDesigns, type Design } from '../../lib/content';
+import { url } from '../../lib/url';
 
 export async function getStaticPaths() {
   const designs = await getDesigns();
@@ -79,7 +80,7 @@ const gallery = await Promise.all(
     <Enquire name={design.name} />
 
     <p class="back wrap">
-      <a class="back-link" href="/#designs"><span aria-hidden="true">←</span> All designs</a>
+      <a class="back-link" href={url('/#designs')}><span aria-hidden="true">←</span> All designs</a>
     </p>
   </article>
   <Lightbox />

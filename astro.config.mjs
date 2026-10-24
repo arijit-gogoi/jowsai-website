@@ -2,6 +2,9 @@
 import { defineConfig, fontProviders } from 'astro/config';
 
 export default defineConfig({
+  // GitHub Pages project site: https://arijit-gogoi.github.io/jowsai-website/
+  site: 'https://arijit-gogoi.github.io',
+  base: '/jowsai-website',
   image: {
     layout: 'constrained',
     responsiveStyles: true,

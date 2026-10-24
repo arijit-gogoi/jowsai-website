@@ -5,12 +5,15 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
+import config from '../astro.config.mjs';
 import { contact } from '../src/config';
 import { orderGallery, scanRaw, sortDesigns } from '../src/lib/raw';
 
 const root = join(import.meta.dir, '..');
 const dist = join(root, 'dist');
 const raw = join(root, 'raw');
+// URLs in dist/ carry `base` (the GitHub Pages project path); the files under dist/ do not.
+const base = (config.base ?? '').replace(/\/$/, '');
 
 if (!existsSync(join(dist, 'index.html'))) {
   throw new Error('dist/ not found: run `bun run build` before `bun test`.');
@@ -27,6 +30,11 @@ const pages = distFiles.filter((file) => file.endsWith('.html'));
 const read = (file: string) => readFileSync(file, 'utf8');
 /** `route` like '' or 'designs/ivory'. */
 const page = (route: string) => read(join(dist, route, 'index.html'));
+/** dist/ file that serves a root-absolute URL, e.g. `/jowsai-website/designs/ivory/#x` → designs/ivory/index.html. */
+const fileFor = (url: string) => {
+  const path = decodeURIComponent(url.slice(base.length).replace(/[?#].*$/, ''));
+  return join(dist, path, path.endsWith('/') ? 'index.html' : '');
+};
 
 type Attrs = Record<string, string>;
 const attrsOf = (tag: string): Attrs =>
@@ -88,7 +96,7 @@ describe('V1: images', () => {
   for (const { slug, images } of designs) {
     test(`every visible image in raw/${slug}/ is on /designs/${slug}/`, () => {
       const html = page(`designs/${slug}`);
-      const missing = images.filter((file) => !html.includes(`/_astro/${stem(file)}.`));
+      const missing = images.filter((file) => !html.includes(`${base}/_astro/${stem(file)}.`));
       expect(missing).toEqual([]);
     });
   }
@@ -188,7 +196,7 @@ describe('V8: scripts', () => {
       expect(scripts).toHaveLength(1);
       const [, attributes, body] = scripts[0]!;
       const src = attrsOf(` ${attributes}`).src;
-      const code = src ? read(join(dist, src)) : body!;
+      const code = src ? read(fileFor(src)) : body!;
       expect(code).toContain('data-lightbox');
     });
   }
@@ -232,7 +240,7 @@ describe('I.route: home', () => {
     const grid = section(page(''), 'designs');
     const expected = sortDesigns(designs);
     expect(page('')).toMatch(/<section\b[^>]*\bid="designs"/);
-    expect(tags(grid, 'a').map((a) => a.href)).toEqual(expected.map((design) => `/designs/${design.slug}/`));
+    expect(tags(grid, 'a').map((a) => a.href)).toEqual(expected.map((design) => `${base}/designs/${design.slug}/`));
     expect(tags(grid, 'img').map((img) => /\/_astro\/([^/]+?)\.[^./]+\.[a-z]+$/.exec(img.src ?? '')?.[1])).toEqual(
       expected.map((design) => stem(design.gallery[0]!.file)),
     );
@@ -275,7 +283,7 @@ for (const design of designs) {
     test('V9: every gallery thumbnail links to an emitted large image', () => {
       const hrefs = tags(gallery, 'a').map((a) => a.href ?? '');
       expect(hrefs).toHaveLength(design.gallery.length);
-      expect(hrefs.filter((href) => !href.startsWith('/_astro/') || !existsSync(join(dist, href)))).toEqual([]);
+      expect(hrefs.filter((href) => !href.startsWith(`${base}/_astro/`) || !existsSync(fileFor(href)))).toEqual([]);
     });
 
     test('title block (name, subtitle, tags), story in order, back link to /#designs', () => {
@@ -293,7 +301,7 @@ for (const design of designs) {
         expect({ block, found: at >= 0 }).toEqual({ block, found: true });
         from = at + block.length;
       }
-      expect(tags(html, 'a').some((a) => a.href === '/#designs' && a.class?.includes('back'))).toBe(true);
+      expect(tags(html, 'a').some((a) => a.href === `${base}/#designs` && a.class?.includes('back'))).toBe(true);
     });
   });
 }
@@ -315,5 +323,27 @@ describe('V13: content sources', () => {
     expect(distFiles.filter((file) => /\.docx$/i.test(file))).toEqual([]);
     const variantHeadings = ['From Cocoon to Craft', 'A Textile That Ages Beautifully', 'Made Slowly. Made Meaningfully.'];
     expect(pages.filter((file) => variantHeadings.some((heading) => read(file).includes(heading)))).toEqual([]);
+  });
+});
+
+describe('V14: base path', () => {
+  /** Root-absolute URLs in href, src, srcset (one per candidate) and CSS url(). */
+  const urlsIn = (text: string) =>
+    [
+      ...[...text.matchAll(/\s(?:href|src)="([^"]*)"/g)].map((m) => m[1]!),
+      ...[...text.matchAll(/\s(?:image)?srcset="([^"]*)"/g)].flatMap((m) => m[1]!.split(',').map((candidate) => candidate.trim().split(/\s+/)[0]!)),
+      ...[...text.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)].map((m) => m[1]!),
+    ].filter((url) => url.startsWith('/') && !url.startsWith('//'));
+  const urls = distFiles
+    .filter((file) => /\.(html|css)$/.test(file))
+    .flatMap((file) => urlsIn(read(file)).map((url) => ({ file: relative(dist, file), url })));
+
+  test('every root-absolute URL in dist/ HTML and CSS starts with the base', () => {
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.filter(({ url }) => !url.startsWith(`${base}/`))).toEqual([]);
+  });
+
+  test('every root-absolute URL in dist/ HTML and CSS resolves to an emitted file', () => {
+    expect(urls.filter(({ url }) => !url.startsWith(`${base}/`) || !existsSync(fileFor(url)))).toEqual([]);
   });
 });
