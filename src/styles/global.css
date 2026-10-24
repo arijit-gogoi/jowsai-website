@@ -1,0 +1,185 @@
+/* Global tokens and base styles. Component styles live in their .astro files. */
+
+:root {
+  /* Cream base, deep brown text, coral-red sampled from the red motif. */
+  --color-bg: #f8f4ec;
+  --color-surface: #efe6d8;
+  --color-text: #3a2a21;
+  --color-text-muted: #6b5546;
+  --color-accent: #e5525a; /* decoration only; never a text color */
+  --color-accent-text: #b3323a; /* coral for text on bg and surface */
+  --color-line: #dccdb8;
+  --color-dark: #3a2a21;
+  --color-on-dark: #f8f4ec;
+  --color-on-dark-muted: #cdbfae;
+  --color-accent-on-dark: #ea7178;
+
+  --page-max: 76rem;
+  --measure: 38rem;
+  --gutter: clamp(1.25rem, 5vw, 3rem);
+  --section-space: clamp(4rem, 3rem + 6vw, 8rem);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-text);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+picture,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+p,
+ul,
+figure {
+  margin: 0;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-text);
+  outline-offset: 3px;
+}
+
+.wrap {
+  width: min(100% - 2 * var(--gutter), var(--page-max));
+  margin-inline: auto;
+}
+
+.eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -5rem;
+  left: var(--gutter);
+  z-index: 10;
+  padding: 0.5rem 1rem;
+  background: var(--color-dark);
+  color: var(--color-on-dark);
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Rendered Markdown from raw/. */
+.prose {
+  max-width: var(--measure);
+}
+
+.prose > * + * {
+  margin-top: 1.1em;
+}
+
+.prose h2 {
+  margin-top: 2.6em;
+  font-size: clamp(1.75rem, 1.35rem + 1.6vw, 2.5rem);
+}
+
+.prose h2::before {
+  content: '';
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-bottom: 1.1rem;
+  background: var(--color-accent);
+  transform: rotate(45deg);
+}
+
+.prose h2 + * {
+  margin-top: 0.9em;
+}
+
+/* A `---` line closes a story; the lines after it form a centred sign-off. */
+.prose hr {
+  width: 3rem;
+  height: 1px;
+  margin: 3.5rem auto 2.5rem;
+  border: 0;
+  background: var(--color-accent);
+}
+
+.prose hr ~ p {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.prose hr + p {
+  padding-inline-start: 0.3em; /* balances the trailing letter-spacing */
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: var(--color-text);
+}
+
+.prose hr + p + p {
+  margin-top: 0.2em;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-style: italic;
+}

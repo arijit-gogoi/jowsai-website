@@ -1,6 +1,7 @@
 ---
 import { Picture } from 'astro:assets';
 import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
 import { getDesigns, type Design } from '../../lib/content';
 
 export async function getStaticPaths() {
@@ -16,22 +17,18 @@ const { design } = Astro.props;
 const { Content } = await render(design.entry);
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>{design.name}</title>
-  </head>
-  <body>
-    <h1>{design.name}</h1>
-    <ul>
-      {
-        design.gallery.map((item) => (
-          <li>
-            <Picture src={item.image} alt={item.alt} formats={['avif', 'webp']} />
-          </li>
-        ))
-      }
-    </ul>
+<Base title={design.name} description={design.subtitle}>
+  <h1>{design.name}</h1>
+  <ul>
+    {
+      design.gallery.map((item) => (
+        <li>
+          <Picture src={item.image} alt={item.alt} formats={['avif', 'webp']} />
+        </li>
+      ))
+    }
+  </ul>
+  <div class="prose">
     <Content />
-  </body>
-</html>
+  </div>
+</Base>

@@ -1,26 +1,21 @@
 ---
 import { Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
 import { getDesigns, getHome } from '../lib/content';
 
 const designs = await getDesigns();
 const { hero } = await getHome();
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>{hero.title}</title>
-  </head>
-  <body>
-    <Picture src={hero.image} alt={hero.alt} formats={['avif', 'webp']} priority />
-    <ul>
-      {
-        designs.map((design) => (
-          <li>
-            <a href={`/designs/${design.slug}/`}>{design.name}</a>
-          </li>
-        ))
-      }
-    </ul>
-  </body>
-</html>
+<Base>
+  <Picture src={hero.image} alt={hero.alt} formats={['avif', 'webp']} priority />
+  <ul>
+    {
+      designs.map((design) => (
+        <li>
+          <a href={`/designs/${design.slug}/`}>{design.name}</a>
+        </li>
+      ))
+    }
+  </ul>
+</Base>

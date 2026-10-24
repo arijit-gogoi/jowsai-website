@@ -78,7 +78,7 @@ T1|x|`git init` + `.gitignore` (`node_modules/`, `dist/`, `.astro/`); migrate `r
 T2|x|scaffold Astro 7 by hand: deps `astro@^7.4`; dev `@astrojs/check`, `typescript@^6`, `@types/bun`; tsconfig strict + `types: ["bun"]`; config `image` layout constrained + `fonts`; scripts dev/build/preview/check/test; no starter assets|V8,V13,I.cmd,R1,R2,R8,R12,R13,R14
 T3|x|raw resolver `src/lib/raw.ts` (pure TS, fs scan): `_` skip, ext filter, order, alt fallback, errors + `bun test` suite|V1,V2,V3,V4,V13,I.file,R6,R15
 T4|x|wire resolver → Astro: collections `designs` & `home`, `import.meta.glob` images, md render|V1,V11,V13,R4,R5,R7
-T5|.|base layout: tokens (palette, fonts), header wordmark, footer, favicon|V10,V12,R10,R11,R12
+T5|x|base layout: tokens (palette, fonts), header wordmark, footer, favicon|V10,V12,R10,R11,R12
 T6|.|`src/config.ts` contact + CTA & footer links|V5,I.link
 T7|.|home `/`: hero, story, `#designs` grid|V6,V8,V11,I.route
 T8|.|design page `/designs/<slug>/`: title block, gallery, story, CTA, back link|V1,V2,V4,V5,I.route
