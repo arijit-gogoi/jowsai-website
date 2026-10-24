@@ -6,7 +6,7 @@ import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
 import { contact } from '../src/config';
-import { scanRaw } from '../src/lib/raw';
+import { orderGallery, scanRaw, sortDesigns } from '../src/lib/raw';
 
 const root = join(import.meta.dir, '..');
 const dist = join(root, 'dist');
@@ -34,8 +34,55 @@ const attrsOf = (tag: string): Attrs =>
 const tags = (html: string, name: string): Attrs[] =>
   [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'g'))].map((m) => attrsOf(m[0]));
 
+/** Inner HTML of the first <section> whose class list starts with `className`. */
+const section = (html: string, className: string) => {
+  const match = new RegExp(`<section\\b[^>]*\\bclass="${className}\\b[^"]*"[^>]*>([\\s\\S]*?)</section>`).exec(html);
+  if (!match) throw new Error(`no <section class="${className}">`);
+  return match[1]!;
+};
+
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const decode = (text: string) =>
+  text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
+    if (entity.startsWith('#x') || entity.startsWith('#X')) return String.fromCodePoint(parseInt(entity.slice(2), 16));
+    if (entity.startsWith('#')) return String.fromCodePoint(parseInt(entity.slice(1), 10));
+    return ENTITIES[entity.toLowerCase()] ?? match;
+  });
+
+/** Text a visitor reads: no scripts, styles or attributes; tags become spaces; smart quotes fold to straight ones. */
+const visibleText = (html: string) =>
+  decode(
+    html
+      .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<[^>]+>/g, ' '),
+  )
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/** Frontmatter and body of a raw/ Markdown file. */
+const readMd = (file: string) => {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/.exec(read(file));
+  if (!match) throw new Error(`no frontmatter in ${file}`);
+  return { data: Bun.YAML.parse(match[1]!) as Record<string, any>, body: match[2]! };
+};
+/** Paragraph and heading texts of a Markdown body, `---` lines dropped. */
+const mdBlocks = (body: string) =>
+  body
+    .split(/\r?\n\s*\r?\n/)
+    .map((block) => block.trim())
+    .filter((block) => block && block !== '---')
+    .map((block) => block.replace(/^#+\s+/, '').replace(/\s+/g, ' '));
+
 const stem = (file: string) => basename(file).replace(/\.[^.]+$/, '');
-const designs = scanRaw(raw);
+const designs = scanRaw(raw).map(({ slug, images }) => {
+  const { data } = readMd(join(raw, slug, 'design.md'));
+  const gallery = orderGallery(slug, data.name, images, data.images);
+  return { slug, images, gallery, name: data.name as string, subtitle: data.subtitle as string | undefined, order: data.order as number | undefined, tags: (data.tags ?? []) as string[] };
+});
 
 describe('V1: images', () => {
   for (const { slug, images } of designs) {
@@ -92,6 +139,64 @@ describe('V11: image dimensions', () => {
         .map((img) => `${relative(dist, file)}: ${img.src}`),
     );
     expect(bad).toEqual([]);
+  });
+
+  test('the hero image loads eagerly with high priority; every other image is lazy', () => {
+    const heroImages = tags(section(page(''), 'hero'), 'img');
+    expect(heroImages).toHaveLength(1);
+    expect(heroImages[0]).toMatchObject({ loading: 'eager', fetchpriority: 'high' });
+    const all = pages.flatMap((file) => tags(read(file), 'img'));
+    expect(all.filter((img) => img.fetchpriority === 'high')).toHaveLength(1);
+    expect(all.filter((img) => img.fetchpriority !== 'high' && img.loading !== 'lazy').map((img) => img.src)).toEqual([]);
+  });
+});
+
+describe('V6: home copy', () => {
+  const home = readMd(join(raw, 'home.md'));
+  const hero = home.data.hero as Record<string, string>;
+  const fixedLines = ['JOWSAI', 'Eri Silk, Woven in Assam.', 'A quiet expression of heritage, shaped by nature and crafted by hand.'];
+
+  test('the hero shows the three fixed lines verbatim, the title as the page <h1>', () => {
+    expect([hero.title, hero.tagline, hero.lede]).toEqual(fixedLines);
+    const heroText = visibleText(section(page(''), 'hero'));
+    for (const line of fixedLines) expect(heroText).toContain(line);
+    expect(tags(page(''), 'h1')).toHaveLength(1);
+    expect(/<h1\b[^>]*>([^<]*)<\/h1>/.exec(page(''))?.[1]).toBe('JOWSAI');
+  });
+
+  test('the story renders every raw/home.md block in order and never repeats the hero lines', () => {
+    const storyText = visibleText(section(page(''), 'story'));
+    let from = 0;
+    for (const block of mdBlocks(home.body)) {
+      const at = storyText.indexOf(block, from);
+      expect({ block, found: at >= 0 }).toEqual({ block, found: true });
+      from = at + block.length;
+    }
+    expect(storyText).not.toContain(fixedLines[1]!);
+    expect(storyText).not.toContain(fixedLines[2]!);
+  });
+});
+
+describe('V8: scripts', () => {
+  test('the home page ships no <script>', () => {
+    expect(page('')).not.toMatch(/<script\b/i);
+  });
+});
+
+describe('I.route: home', () => {
+  test('the #designs grid links every design in grid order with its cover, name and subtitle', () => {
+    const grid = section(page(''), 'designs');
+    const expected = sortDesigns(designs);
+    expect(page('')).toMatch(/<section\b[^>]*\bid="designs"/);
+    expect(tags(grid, 'a').map((a) => a.href)).toEqual(expected.map((design) => `/designs/${design.slug}/`));
+    expect(tags(grid, 'img').map((img) => /\/_astro\/([^/]+?)\.[^./]+\.[a-z]+$/.exec(img.src ?? '')?.[1])).toEqual(
+      expected.map((design) => stem(design.gallery[0]!.file)),
+    );
+    const text = visibleText(grid);
+    for (const design of expected) {
+      expect(text).toContain(design.name);
+      if (design.subtitle) expect(text).toContain(design.subtitle);
+    }
   });
 });
 

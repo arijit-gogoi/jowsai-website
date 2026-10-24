@@ -1,21 +1,207 @@
 ---
 import { Picture } from 'astro:assets';
+import { render } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import { getDesigns, getHome } from '../lib/content';
 
 const designs = await getDesigns();
-const { hero } = await getHome();
+const { entry, hero } = await getHome();
+const { Content } = await render(entry);
 ---
 
 <Base>
-  <Picture src={hero.image} alt={hero.alt} formats={['avif', 'webp']} priority />
-  <ul>
-    {
-      designs.map((design) => (
-        <li>
-          <a href={`/designs/${design.slug}/`}>{design.name}</a>
-        </li>
-      ))
-    }
-  </ul>
+  <section class="hero wrap" aria-labelledby="hero-title">
+    <div class="hero__text">
+      <h1 id="hero-title">{hero.title}</h1>
+      <p class="hero__tagline">{hero.tagline}</p>
+      <p class="hero__lede">{hero.lede}</p>
+    </div>
+    <Picture
+      src={hero.image}
+      alt={hero.alt}
+      formats={['avif', 'webp']}
+      width={720}
+      widths={[480, 720, 1024]}
+      sizes="(min-width: 56rem) 45vw, 100vw"
+      priority
+      class="hero__image"
+      pictureAttributes={{ class: 'hero__media' }}
+    />
+  </section>
+
+  <section class="story wrap">
+    <div class="prose">
+      <Content />
+    </div>
+  </section>
+
+  <section class="designs" id="designs" aria-labelledby="designs-title">
+    <div class="wrap">
+      <h2 id="designs-title">Designs</h2>
+      <ul class="designs__grid">
+        {
+          designs.map((design) => {
+            const cover = design.gallery[0]!;
+            return (
+              <li>
+                <a class="card" href={`/designs/${design.slug}/`}>
+                  <Picture
+                    src={cover.image}
+                    alt={cover.alt}
+                    formats={['avif', 'webp']}
+                    width={600}
+                    height={800}
+                    widths={[400, 600, 800, 1024]}
+                    position="top"
+                    sizes="(min-width: 68rem) 31rem, (min-width: 44rem) 45vw, 90vw"
+                    class="card__image"
+                  />
+                  <h3 class="card__name">{design.name}</h3>
+                  {design.subtitle && <p class="card__subtitle">{design.subtitle}</p>}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </div>
+  </section>
 </Base>
+
+<style>
+  .hero {
+    display: grid;
+    align-items: center;
+    gap: clamp(2rem, 1rem + 4vw, 4.5rem);
+    padding-block: clamp(1rem, 0.5rem + 2vw, 2.5rem) var(--section-space);
+  }
+
+  @media (min-width: 56rem) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+
+  .hero__text {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  h1 {
+    font-size: clamp(3.75rem, 2.4rem + 6vw, 7.5rem);
+    letter-spacing: 0.14em;
+    line-height: 1;
+  }
+
+  .hero__tagline {
+    font-family: var(--font-display);
+    font-size: clamp(1.625rem, 1.3rem + 1.5vw, 2.375rem);
+    font-style: italic;
+    line-height: 1.2;
+  }
+
+  .hero__lede {
+    max-width: 26rem;
+    color: var(--color-text-muted);
+    font-size: 1.125rem;
+  }
+
+  .hero__lede::before {
+    content: '';
+    display: block;
+    width: 3rem;
+    height: 1px;
+    margin-bottom: 1.25rem;
+    background: var(--color-accent);
+  }
+
+  .hero__image {
+    width: 100%;
+    height: auto;
+    max-height: 82svh;
+    object-fit: cover;
+    object-position: center 30%;
+  }
+
+  .story .prose {
+    margin-inline: auto;
+  }
+
+  /* Paragraphs before the first heading open the story in the display face. */
+  .story .prose > :global(p:not(h2 ~ p)) {
+    font-family: var(--font-display);
+    font-size: clamp(1.375rem, 1.15rem + 0.9vw, 1.75rem);
+    line-height: 1.45;
+  }
+
+  .designs {
+    margin-top: var(--section-space);
+    padding-block: var(--section-space);
+    background: var(--color-surface);
+  }
+
+  /* The designs band runs straight into the footer. */
+  :global(.site-footer) {
+    margin-top: 0;
+  }
+
+  .designs h2 {
+    margin-bottom: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+    font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+    text-align: center;
+  }
+
+  .designs__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: clamp(2rem, 1rem + 3vw, 3rem);
+    max-width: 64rem;
+    margin-inline: auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  .card {
+    display: grid;
+    gap: 0.35rem;
+    text-decoration: none;
+  }
+
+  .card :global(picture) {
+    overflow: hidden;
+  }
+
+  .card__image {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    object-position: top;
+  }
+
+  .card__name {
+    margin-top: 0.9rem;
+    font-size: clamp(1.375rem, 1.2rem + 0.6vw, 1.75rem);
+  }
+
+  .card__subtitle {
+    color: var(--color-text-muted);
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-style: italic;
+  }
+
+  .card:hover .card__name {
+    color: var(--color-accent-text);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card__image {
+      transition: transform 0.6s ease;
+    }
+
+    .card:hover .card__image {
+      transform: scale(1.03);
+    }
+  }
+</style>
