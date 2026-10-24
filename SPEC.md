@@ -75,7 +75,7 @@ V13: build reads content only from `raw/` & `src/config.ts`. `.docx` ⊥ read.
 ## §T TASKS
 id|status|task|cites
 T1|x|`git init` + `.gitignore` (`node_modules/`, `dist/`, `.astro/`); migrate `raw/`: loose files → `red-motif/` & `ivory/`; sq1, sq2 → `_sq1.jpg`, `_sq2.jpg`; txt → `design.md` (frontmatter, alt, tags) + originals → `_archive/`; variant A → `raw/home.md`|V6,V7,I.file
-T2|.|scaffold Astro 7 by hand: deps `astro@^7.4`; dev `@astrojs/check`, `typescript@^6`, `@types/bun`; tsconfig strict + `types: ["bun"]`; config `image` layout constrained + `fonts`; scripts dev/build/preview/check/test; no starter assets|V8,V13,I.cmd,R1,R2,R8,R12,R13,R14
+T2|x|scaffold Astro 7 by hand: deps `astro@^7.4`; dev `@astrojs/check`, `typescript@^6`, `@types/bun`; tsconfig strict + `types: ["bun"]`; config `image` layout constrained + `fonts`; scripts dev/build/preview/check/test; no starter assets|V8,V13,I.cmd,R1,R2,R8,R12,R13,R14
 T3|.|raw resolver `src/lib/raw.ts` (pure TS, fs scan): `_` skip, ext filter, order, alt fallback, errors + `bun test` suite|V1,V2,V3,V4,V13,I.file,R6,R15
 T4|.|wire resolver → Astro: collections `designs` & `home`, `import.meta.glob` images, md render|V1,V11,V13,R4,R5,R7
 T5|.|base layout: tokens (palette, fonts), header wordmark, footer, favicon|V10,V12,R10,R11,R12
