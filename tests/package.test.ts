@@ -38,8 +38,9 @@ describe('package', () => {
 });
 
 describe('content sources', () => {
-  test('V13: source and config never read .docx files', () => {
-    const files = [...walk(join(root, 'src')), join(root, 'astro.config.mjs')];
+  test('V13: build sources and config never read .docx files', () => {
+    const sources = walk(join(root, 'src')).filter((file) => !file.endsWith('.test.ts'));
+    const files = [...sources, join(root, 'astro.config.mjs')];
     expect(files.filter((file) => /\.docx\b/i.test(readFileSync(file, 'utf8')))).toEqual([]);
   });
 });
