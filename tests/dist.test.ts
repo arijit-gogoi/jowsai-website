@@ -5,6 +5,7 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
+import { contact } from '../src/config';
 import { scanRaw } from '../src/lib/raw';
 
 const root = join(import.meta.dir, '..');
@@ -54,6 +55,32 @@ describe('V1: images', () => {
     expect(hidden.length).toBeGreaterThan(0);
     const leaked = distFiles.filter((file) => hidden.some((name) => basename(file).startsWith(`${name}.`)));
     expect(leaked).toEqual([]);
+  });
+});
+
+describe('V5: contact links', () => {
+  test('no empty, "#", TODO or example hrefs on any page', () => {
+    const bad = pages.flatMap((file) =>
+      tags(read(file), 'a')
+        .filter((a) => !a.href || a.href === '#' || /todo|example/i.test(a.href))
+        .map((a) => `${relative(dist, file)}: ${a.href}`),
+    );
+    expect(bad).toEqual([]);
+  });
+
+  test('a contact link appears only when its src/config.ts value is set', () => {
+    const prefixes = { whatsapp: 'https://wa.me/', email: 'mailto:', instagram: 'https://www.instagram.com/' };
+    for (const [key, prefix] of Object.entries(prefixes) as [keyof typeof contact, string][]) {
+      const rendered = pages.some((file) => tags(read(file), 'a').some((a) => a.href?.startsWith(prefix)));
+      expect({ key, rendered }).toEqual({ key, rendered: contact[key] !== '' });
+    }
+  });
+
+  test('enquiry block only with WhatsApp or email; footer contact list only with any value', () => {
+    const withCta = Boolean(contact.whatsapp || contact.email);
+    const withFooterList = Object.values(contact).some(Boolean);
+    for (const { slug } of designs) expect(page(`designs/${slug}`).includes('id="enquire-title"')).toBe(withCta);
+    for (const file of pages) expect(read(file).includes('site-footer__contact')).toBe(withFooterList);
   });
 });
 

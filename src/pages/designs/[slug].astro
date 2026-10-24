@@ -1,6 +1,7 @@
 ---
 import { Picture } from 'astro:assets';
 import { render } from 'astro:content';
+import Enquire from '../../components/Enquire.astro';
 import Base from '../../layouts/Base.astro';
 import { getDesigns, type Design } from '../../lib/content';
 
@@ -31,4 +32,5 @@ const { Content } = await render(design.entry);
   <div class="prose">
     <Content />
   </div>
+  <Enquire name={design.name} />
 </Base>
