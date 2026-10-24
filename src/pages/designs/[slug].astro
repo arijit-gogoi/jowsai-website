@@ -1,0 +1,37 @@
+---
+import { Picture } from 'astro:assets';
+import { render } from 'astro:content';
+import { getDesigns, type Design } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const designs = await getDesigns();
+  return designs.map((design) => ({ params: { slug: design.slug }, props: { design } }));
+}
+
+interface Props {
+  design: Design;
+}
+
+const { design } = Astro.props;
+const { Content } = await render(design.entry);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{design.name}</title>
+  </head>
+  <body>
+    <h1>{design.name}</h1>
+    <ul>
+      {
+        design.gallery.map((item) => (
+          <li>
+            <Picture src={item.image} alt={item.alt} formats={['avif', 'webp']} />
+          </li>
+        ))
+      }
+    </ul>
+    <Content />
+  </body>
+</html>
