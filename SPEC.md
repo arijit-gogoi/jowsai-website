@@ -20,22 +20,24 @@ static Astro 7 portfolio site for JOWSAI (handwoven Eri silk stoles, Assam): `/`
 - look: ivory/cream base, coral-red accent (sampled from red motif), deep brown text. fonts: Cormorant Garamond (display) + Jost (text), OFL, self-hosted via `fontProviders.fontsource()`. wordmark = text "JOWSAI" (no logo file).
 - English only. OUT: prices, cart, checkout, payments, accounts, CMS, backend, forms, analytics, i18n, blog. sitemap/OG/canonical deferred until domain known.
 - done = `bun run build` & `bun run check` & `bun test` clean + Chrome @390px & 1440px on `/`, `/designs/red-motif/`, `/designs/ivory/` → 0 console errors + ∀ img alt non-empty.
+- deploy: GitHub Pages, built by Actions (`.github/workflows/deploy.yml`): push `main` → Node 26 + bun 1.4.2 → `bun install --frozen-lockfile` · `bun run check` · `bun run build` · `bun test` → `dist/` → Pages. any step fails → ⊥ deploy. served @ `https://arijit-gogoi.github.io/jowsai-website/` ∴ config `site` = `https://arijit-gogoi.github.io`, `base` = `/jowsai-website`; hand-written internal URL ! via `url()` (`src/lib/url.ts`).
 - ? WhatsApp number, email, Instagram handle → CTA & footer links hidden until set.
 - ? ivory fibre (100% Eri | blend) & Bodo/dye applicability → `_sq2.jpg` stays hidden until resolved.
-- ? domain & deploy target → `site` URL, canonical, OG, sitemap deferred.
+- ? custom domain → `site` = domain, `base` = `/`; canonical, OG, sitemap deferred until then.
 - ? logo asset → text wordmark meanwhile.
 - ? current photos final | stand-ins → swap via `raw/` drop-in.
-- git: ! 1 Conventional Commit per §T (e.g. `feat(site): T7 home page`). ⊥ remote, ⊥ push.
+- git: ! 1 Conventional Commit per §T (e.g. `feat(site): T7 home page`). remote `origin` = `github.com/arijit-gogoi/jowsai-website`; push `main` = deploy.
 
 ## §I INTERFACES
 - file: `raw/home.md` → frontmatter `{hero: {image: <path rel raw/>, alt, title, tagline, lede}}` (title/tagline/lede = 3 hero lines) + Markdown body = story = variant A after its 3 hero lines (`##` = section; inline `![alt](<rel path>)` ok).
 - file: `raw/<slug>/design.md` → frontmatter `{name!, subtitle?, order?: number, images?: [{file!, alt!}], tags?: string[]}` + Markdown body = story & care. grid order = `order` asc, then slug.
 - file: `raw/<slug>/*.{jpg,jpeg,png,webp,avif}` (ext case-insensitive) → gallery images. `_*` ignored. other files ignored.
 - file: `src/config.ts` → `contact = {whatsapp: '' | digits w/ country code, no '+', email: '' | address, instagram: '' | handle}`.
+- url: site root = `base`; ∀ route & asset path below sits under it (`/designs/ivory/` → `/jowsai-website/designs/ivory/`). `url(path)` → `base` + path.
 - route: `/` → hero · story · `#designs` grid (cover, name, subtitle → link).
 - route: `/designs/<slug>/` → title block (name, subtitle, tags) · gallery + lightbox · story · CTA · back link `/#designs`.
 - link: `https://wa.me/<digits>?text=<enc>` · `mailto:<email>?subject=<enc>` · `https://www.instagram.com/<handle>/`.
-- cmd: `bun install` · `bun run dev` · `bun run build` → `dist/` · `bun run preview` · `bun run check` (astro check) · `bun test` (bun:test: unit tests + `dist/` checks; ! after `bun run build`; `dist/` missing → fail).
+- cmd: `bun install` · `bun run dev` · `bun run build` → `dist/` · `bun run preview` (dev & preview @ `http://localhost:4321/jowsai-website/`) · `bun run check` (astro check) · `bun test` (bun:test: unit tests + `dist/` checks; ! after `bun run build`; `dist/` missing → fail).
 
 ## §R RESEARCH
 probe = throwaway Astro 7.4.2 build under bun 1.4.2 on this machine.
@@ -56,6 +58,8 @@ R13|astro check|needs `@astrojs/check` (0.9.12) + `typescript@^6`. TS 7.0.2 → 
 R14|bun types|TS 6 + `bun:test` / `node:*` imports → ts(2307) / ts(2591) until `@types/bun` + tsconfig `compilerOptions.types: ["bun"]`; then `astro check` 0 errors|probe
 R15|bun test|`bun test` runs `*.test.ts` (TS native, `node:fs` ok) ∴ resolver ! pure TS: ⊥ `import.meta.glob`, ⊥ `astro:*`|probe
 R16|versions|astro 7.4.2 → Vite 8, Zod 4, rolldown; engines node `>=22.23.4`|`astro/package.json`
+R17|base path|Pages project site = `https://<owner>.github.io/<repo>/`. w/ `base`, Astro prefixes its own URLs (`_astro/` css, images, `getImage().src`, font preloads & `@font-face url()`); hand-written `href` ⊥ prefixed ∴ `url()`|`dist/` of base build
+R18|CI|`bun.lock` holds linux-x64 bindings (sharp, rolldown, lightningcss, compiler) ∴ `--frozen-lockfile` ok on ubuntu. latest majors: `actions/checkout@v7`, `actions/setup-node@v7`, `oven-sh/setup-bun@v2`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5` (release notes: ⊥ input changes)|`bun.lock`; GitHub releases API
 
 ## §V INVARIANTS
 V1: ∀ visible image ∈ `raw/<slug>/` → rendered on `/designs/<slug>/`. `_`-prefixed file|folder ⊥ rendered & ⊥ emitted to `dist/`.
@@ -71,6 +75,7 @@ V10: ∀ text contrast ≥ 4.5:1 (large text ≥ 3:1). coral accent ⊥ small te
 V11: ∀ img width & height set (⊥ layout shift). hero eager + `fetchpriority="high"`; rest lazy.
 V12: ⊥ horizontal scroll @ 390px & 1440px. 0 console errors ∀ route.
 V13: build reads content only from `raw/` & `src/config.ts`. `.docx` ⊥ read.
+V14: ∀ root-absolute URL in `dist/` HTML & CSS (`href`, `src`, `srcset`, `url()`) starts w/ `base` & resolves to a `dist/` file. live: `/`, `/designs/<slug>/` & their same-origin URLs → 200.
 
 ## §T TASKS
 id|status|task|cites
@@ -84,6 +89,8 @@ T7|x|home `/`: hero, story, `#designs` grid|V6,V8,V11,I.route
 T8|x|design page `/designs/<slug>/`: title block, gallery, story, CTA, back link|V1,V2,V4,V5,I.route
 T9|x|lightbox: native `<dialog>`, progressive enhancement|V8,V9
 T10|x|verify: build, check, test, `dist/` greps, Chrome @390px & 1440px|V1,V4,V7,V8,V10,V11,V12
+T11|.|Pages base path: config `site` + `base`; `src/lib/url.ts` `url()` ∀ hand-written internal URL; `dist/` tests base-aware + V14 checks|V14,I.url,R17
+T12|.|deploy: `.github/workflows/deploy.yml`; GitHub repo `arijit-gogoi/jowsai-website` + Pages (`build_type` workflow); push `main`; live check @ Pages URL|V14,I.cmd,R18
 
 ## §B BUGS
 id|date|cause|fix
